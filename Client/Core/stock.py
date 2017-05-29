@@ -8,12 +8,13 @@ in the project root for full license information.
 import datetime
 import sys
 
+from .loggable import Loggable
 from .strategy import NullStrategy
 from .trademonitor import NullTradeMonitor
 from .signals import NullHandler
 from .trade import Trade
 
-class Stock:
+class Stock(Loggable):
     def __init__(self, gateway, symbol, exchange):
         # The Gateway object that bridges this stock class and the server
         # interface
@@ -71,35 +72,44 @@ class Stock:
 
         # if any trades are in a state of opening,
         # use the current pricebar's open as a rough estimate
-        # of the trade price. 
+        # of the trade price.
         if len(self.open_orders) + len(self.close_orders) > 0:
             order_ids = list(self.open_orders) + list(self.close_orders)
             for order_id in order_ids:
                 self.setOrderFilled(order_id, self.current_bar.open)
 
-        """ Monitor open trades for opening and closing purposes. """
-        for trade in self.open_trades:
+        # Monitor open trades for opening and closing purposes.
+        for i in range(len(self.open_trades)):
+            trade = self.open_trades[i]
             if not self.trade_monitor.notify_single(trade, self.current_bar):
                 trade.close()
+                self.closed_trades.append(trade)
+                del self.open_trades[i]
 
-    # Here are some simple order simulators. When an order is created, start a trade with
-    # a number of shares and direction. The actual trading price is determined by the next bar.
-    def startOrder(self, buyOrSell):
+    def startOrder(self, action):
+        """ Create a Trade object
+        :param action 1 for Go Long, -1 for Go Short
+        """
         current_price = self.current_bar.close
         shares = int(self.trade_amount * 100) // int(current_price * 100)
-        self.open_trades.append(Trade(self, shares, buyOrSell))
-    # Register the trade to receive the price at the next bar
+        self.open_trades.append(Trade(self, shares, action))
     def handleOpenOrder(self, trade):
+        """Register the trade to receive the price at the next bar
+        to be used as an opening value
+        """
         self.unique_id += 1
         self.open_orders[self.unique_id] = trade
-    
+
     def handleCloseOrder(self, trade):
+        """Register the trade to receive the price at the next bar
+        to be used as a closing value
+        """
         self.unique_id += 1
         self.close_orders[self.unique_id] = trade
 
-    # This can be used either from the gateway or from this class itself, depending
-    # on whether you're doing a simple simulation or a real-life trade.
     def setOrderFilled(self, order_id, averagePrice):
+        # This can be used either from the gateway or from this class itself, depending
+        # on whether you're doing a simple simulation or a real-life trade.
         if order_id in self.open_orders:
             self.open_orders[order_id].openSuccess(averagePrice)
             del self.open_orders[order_id]
@@ -108,8 +118,11 @@ class Stock:
             del self.close_orders[order_id]
 
     def adjustBarTime(self, price_bar, doAdjust=True):
-        # Bar datetimes can come in different formats. This
-        # tries to catch several formats in one go.
+        """Convert a pricebar's string timestamp into a datetime object.
+
+        Bar datetimes can come in different formats. This method tries to
+        catch several formats in one go.
+        """
         time = price_bar.time
         time = time.replace("  ", " ")
         time = time.replace("/", "")
@@ -118,23 +131,5 @@ class Stock:
         if doAdjust and not self.is_backtest:
             price_bar.time += self.time_offset
 
-    def report(self, *arg):
-        print(
-            "{:s} ~ {:s} > ".format(
-                str(datetime.datetime.now())[:23],
-                self.symbol
-            ),
-            *arg
-        )
-        sys.stdout.flush()
-
-    def reportError(self, *arg):
-        print(
-            "{:s} ~ {:s} > ".format(
-                str(datetime.datetime.now())[:23],
-                self.symbol
-            ),
-            *arg,
-            file=sys.stderr
-        )
-        sys.stderr.flush()
+    def getLogTag(self):
+        return "Stock - {:s}".format(self.symbol)

@@ -5,10 +5,10 @@ Licensed under the Attribution-ShareAlike 4.0 International. See LICENSE file
 in the project root for full license information.  
 
 """
-
+from .loggable import Loggable
 from abc import ABCMeta, abstractmethod
 
-class Handler(metaclass=ABCMeta):
+class Handler(ABCMeta, Loggable):
     """ Generic abstract class defining the methods that a signaller requires """
     @abstractmethod
     def initialise(self):
@@ -40,6 +40,9 @@ class Handler(metaclass=ABCMeta):
         """
         # useful for signalling methods that introduce latency
         pass
+    def getLogTag(self):
+        return self.__class__.__name__
+
 
 
 class MultiHandler(Handler):
@@ -53,8 +56,6 @@ class MultiHandler(Handler):
         """
         self.handlers = child_handlers
     def initialise(self):
-        sys.stderr.write("Initiating child signallers\n")
-        sys.stderr.flush()
         for handler in self.handlers:
             handler.initialise()
     def startOrder(self, stock, trade):
@@ -86,14 +87,14 @@ class BacktestSignaller(NullHandler):
     should be handled. At current, it prints out the orders to the terminal.
     """
     def startOrder(self, stock, trade):
-        stock.report("--- simulated signal ---")
-        stock.report("Start Order")
-        stock.report("Action: {:s}".format("Buy" if trade.action == 1 else "Sell"))
-        stock.report("Time  : {:s}", str(trade.open_time))
+        self.report("--- simulated signal ---")
+        self.report("Start Order")
+        self.report("Action: {:s}".format("Buy" if trade.action == 1 else "Sell"))
+        self.report("Time  : {:s}", str(trade.open_time))
     def closeOrder(self, stock, trade):
-        stock.report("--- simulated signal ---")
-        stock.report("Closing Order")
-        stock.report("Time  : {:s}", str(trade.close_time))
+        self.report("--- simulated signal ---")
+        self.report("Closing Order")
+        self.report("Time  : {:s}", str(trade.close_time))
     def closeAll(self, stock, time):
-        stock.report("--- simulated signal ---")
-        stock.report("Closing ALL orders")
+        self.report("--- simulated signal ---")
+        self.report("Closing ALL orders")

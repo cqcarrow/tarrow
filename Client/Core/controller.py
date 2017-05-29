@@ -1,5 +1,4 @@
-"""
-Create an set of stocks (input by symbol) and open communications
+""" Create an set of stocks (input by symbol) and open communications
 between them and the server via the Gateway.
 
 Copyright (c) Cambridge Quantum Computing ltd. All rights reserved.  
@@ -17,6 +16,8 @@ from .gateway import Gateway
 from .pricebar import PriceBar
 
 class Controller:
+    """ Responsible for managing a set of stocks in one process.
+    """
     def __init__(self, version, environment, global_settings, client_id, symbols):
         self.version = version
         self.environment = environment
@@ -26,7 +27,7 @@ class Controller:
         self.new_bars = {}
         self.global_settings = global_settings
         self.loadStocks(symbols)
-        
+
         if "reporter" not in global_settings:
             global_settings["reporter"] = NullReporter()
 
@@ -122,7 +123,7 @@ class Controller:
             )
         self.report("loaded all settings for {:s}".format(symbol))
         return stock_settings
-    
+
     def goLive(self):
         # these are done in blocks rather than all-in-one, to allow separate stocks
         # to get to the same stage before moving on
@@ -150,22 +151,15 @@ class Controller:
         # Run the listening loop.
         self.listen()
 
-    @staticmethod
-    def report(*arg):
-        print(
-            "{:s} ~ [interface] > ".format(
-                str(datetime.datetime.now())[:23]
-            ),
-            *arg
-        )
-        sys.stdout.flush()
-
+    def getLogTag(self):
+        return "Controller"
+    
     def listen(self):
         """ Run the main listening loop, handling responses from the gateway. """
         while True:
             # wait or the gateway to send us something
             listen_input = self.gateway.listen()
-            elif listen_input["Type"] == "Prepare for Live Bars":
+            if listen_input["Type"] == "Prepare for Live Bars":
                 # PriceBars are going to come in - store them all and process in bulk afterwards,
                 # so that the message queue isn't blocked
                 self.new_bars = {}
@@ -193,6 +187,6 @@ class Controller:
             elif listen_input["Type"] == "Server Exit":
                 self.report("Server has closed.")
                 self.report("Generating complete report.")
-                self.report("Trades:", sum(len(self.stocks[symbol].trades) for symbol in self.stocks))
+                self.report("Trades:", sum(len(self.stocks[symbol].closed_trades) for symbol in self.stocks))
                 self.reporter.endOfDay(self)
                 sys.exit(0)

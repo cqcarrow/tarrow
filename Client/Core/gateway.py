@@ -12,9 +12,10 @@ import sys
 import zmq
 import ujson
 
+from .loggable import Loggable
 from .pricebar import PriceBar
 from .stock import Stock
-class Gateway:
+class Gateway(Loggable):
     """ The gateway between the Controller and the Server
 
     Communication is done via TCP with the ZMQ library. First we send
@@ -265,7 +266,5 @@ class Gateway:
                 return
             time.sleep(1)
 
-    @staticmethod
-    def report(*arg):
-        print(str(datetime.datetime.now())[:24], "~ [gateway] >", *arg)
-        sys.stdout.flush()
+    def getLogTag(self):
+        return "Gateway"

@@ -7,7 +7,8 @@ in the project root for full license information.
 """
 import sys
 import datetime
-class TradeMonitor:
+from .loggable import Loggable
+class TradeMonitor(Loggable):
     """ Used for monitoring open positions and determining when it is time to
     close them. This could be due to a timed position of n minutes, or because
     of a stop loss, or any monitoring tactic you want. """
@@ -18,6 +19,7 @@ class TradeMonitor:
         should be closed.
         """
         return True
+
     def notify_multiple(self, open_trades, closed_trades, current_bar):
         """ Monitor all trades opened so far, including closed trades.
         This is useful for multi-trade metrics, such as the overall return
@@ -26,15 +28,8 @@ class TradeMonitor:
         """
         raise NotImplementedError("Multiple trade monitoring is not yet implemented")
 
-    def report(self, *arg):
-        print(
-            "{:s} ~ {:s} > ".format(
-                str(datetime.datetime.now())[:23],
-                self.__class__.__name__
-            ),
-            *arg
-        )
-        sys.stdout.flush()
+    def getLogTag(self):
+        return self.__class__.__name__
 
 class MultiTradeMonitor(TradeMonitor):
     def __init__(self, child_trade_monitors):
