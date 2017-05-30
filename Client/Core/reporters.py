@@ -3,7 +3,7 @@ Send a report of all trades for this client application.
 
 
 Copyright (c) Cambridge Quantum Computing ltd. All rights reserved.  
-Licensed under the Attribution-ShareAlike 4.0 International. See LICENSE file
+Licensed under the MIT License. See LICENSE file
 in the project root for full license information.  
 
 """

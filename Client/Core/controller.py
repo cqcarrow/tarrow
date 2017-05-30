@@ -2,7 +2,7 @@
 between them and the server via the Gateway.
 
 Copyright (c) Cambridge Quantum Computing ltd. All rights reserved.  
-Licensed under the Attribution-ShareAlike 4.0 International. See LICENSE file
+Licensed under the MIT License. See LICENSE file
 in the project root for full license information.  
 
 """
